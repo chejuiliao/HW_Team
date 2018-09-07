@@ -4,8 +4,8 @@ library(dplyr)
 library(stringr)
 library(ggplot2)
 library(zoo)
-
-na.approx()
+library(forecast)
+library(fma)
 
 rm(list=ls())
 # import well data
@@ -120,7 +120,7 @@ ggplot(df_ts, aes(month)) +
   ylab("Well ft") +
   labs(title = "Actual vs. Model Trend Decomposition", size = 15) +
   theme(legend.title = element_blank())
-  
+
 # create the plot for the seasonality
 ggplot(df_ts, aes(month)) + 
   geom_line(aes(y = seasonal, colour = "Actual")) + 
@@ -149,7 +149,7 @@ autoplot(ls_Model$HW_M) +
   xlab("Date") +
   labs(title = "Well ft ESM Forecast for 6 months", size = 15) +
   theme(legend.title = element_blank())
-  
+
 
 
 

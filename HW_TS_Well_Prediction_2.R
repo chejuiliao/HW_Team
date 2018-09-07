@@ -129,7 +129,7 @@ ggplot(df_ts, aes(month)) +
   labs(title = "Actual vs. Model Seasonality Decomposition", size = 15) +
   theme(legend.title = element_blank())
 
-df_prediction <- data.frame(cbind(month = month_agg$month[(nrow(month_agg)-5):nrow(month_agg)], test = test, HW_M = ls_Model$HW_M$mean))
+df_prediction <- data.frame(cbind(month = month_agg_intp$month[(nrow(month_agg)-5):nrow(month_agg)], test = test, HW_M = ls_Model$HW_M$mean))
 df_prediction$month <- as.Date(df_prediction$month)
 
 # create the plot for the prediction

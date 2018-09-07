@@ -114,7 +114,7 @@ df_ts <- cbind(df_ts, HW_seasonal = df_HW_stl$seasonal, HW_trend = df_HW_stl$tre
 
 # create the plot for the trend
 ggplot(df_ts, aes(month)) + 
-  geom_line(aes(y = trend, colour = "Actual")) + 
+  geom_line(aes(y = training, colour = "Actual")) + 
   geom_line(aes(y = HW_trend, colour = "Prediction")) +
   xlab("Date") +
   ylab("Well ft") +
@@ -125,6 +125,7 @@ ggplot(df_ts, aes(month)) +
 ggplot(df_ts, aes(month)) + 
   geom_line(aes(y = seasonal, colour = "Actual")) + 
   geom_line(aes(y = HW_seasonal, colour = "Prediction")) +
+  scale_x_date(limits = c(as.Date('2014-01-01'), as.Date('2014-05-01')))
   xlab("Date") +
   ylab("Well ft") +
   labs(title = "Actual vs. Model Seasonality Decomposition", size = 15) +
@@ -153,4 +154,15 @@ autoplot(ls_Model$HW_M) +
 
 
 
-
+i = 2007
+as.Date(paste0(as.character(i), '-01-01'))
+# seasonality test
+for (i in 2008:2016) {
+  print(as.Date(paste0(as.character(i), '-01-01')))
+ggplot(df_ts, aes(month)) + 
+  geom_line(aes(y = seasonal, colour = "Actual")) + 
+  geom_line(aes(y = HW_seasonal, colour = "Prediction")) +
+  scale_x_date(limits = c(as.Date(paste0(as.character(i), '-01-01')), as.Date(paste0(as.character(i), '-06-01'))))+
+  labs(title = i, size = 15) +
+  theme(legend.title = element_blank())
+}

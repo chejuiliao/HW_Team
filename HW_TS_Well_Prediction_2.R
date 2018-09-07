@@ -72,13 +72,14 @@ training <- subset(well_ts, end = length(well_ts) - 6)
 test <- subset(well_ts, start = length(well_ts) - 5)
 
 # generate prediction by using different model
-HW_M_Train <- hw(training, seasonal = "multiplicative",initial='optimal', h = 6)
-HW_A_Train <- hw(training, seasonal = "additive",initial='optimal', h = 6)
+HW_M_Train <- hw(training, seasonal = "multiplicative", initial='optimal', h = 6)
+HW_A_Train <- hw(training, seasonal = "additive", initial='optimal', h = 6)
 SES_Train <- ses(training, initial = "optimal", h=6)
-HOLT_Train <- holt(training,initial='optimal', h = 6)
+HOLT_Train <- holt(training, initial='optimal', h = 6)
+DAMPED_Train <- holt(training, initial='optimal', damped = TRUE, h = 6)
 
 # store the different model results in a list
-ls_Model <- list(HW_M = HW_M_Train, HW_A = HW_A_Train, SES = SES_Train, HOLT = HOLT_Train)
+ls_Model <- list(HW_M = HW_M_Train, HW_A = HW_A_Train, SES = SES_Train, HOLT = HOLT_Train, DAMPED = DAMPED_Train)
 
 # calculate MAPE
 for(i in 1:length(ls_Model)){

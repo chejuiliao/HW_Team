@@ -9,10 +9,12 @@ library(fma)
 library(imputeTS)
 library(tseries)
 
+# Clear workspace for consistency reasons
 rm(list=ls())
-# import well data
-setwd("C:/Users/Jerry/Documents/MSA18/Time_Series/HW/HW_Team")
-well <- read_excel("../PB-1680_T.xlsx", sheet = 3)
+
+
+# import well data, make sure to set your working directory to the source file location
+well <- read_excel("PB-1680_T.xlsx", sheet = 3)
 
 # change time data into character and make the hourly time frame
 well$date <- as.character(well$date)
@@ -24,13 +26,13 @@ well$hour <- paste0(well$hour, ":00:00", " ", well$tz_cd)
 well$hour <- as.POSIXct(well$hour)
 attributes(well$hour)$tzone <- "UTC"
 
-# aggregate the data on hour basis
+# aggregate the data on an hourly basis
 well_agg <- well %>%
   group_by(hour) %>%
   summarise(Well_ft_mean = mean(Well_ft, na.rm = TRUE),
             Corrected_mean = mean(Corrected, na.rm = TRUE)) 
 
-# arrange the time data to create monthly basis
+# Prepare the data to be aggregated by Year/Month 
 month_agg <- well_agg
 month_agg$hour <- as.POSIXct(well_agg$hour)
 month_agg <- cbind(month = paste(as.character(year(well_agg$hour)), as.character(month(well_agg$hour))),well_agg)
@@ -44,15 +46,15 @@ month_agg <- month_agg %>%
   summarise(Well_ft_mean = mean(Well_ft_mean, na.rm = TRUE), Corrected_mean = mean(Corrected_mean, na.rm = TRUE))
 colnames(month_agg)[1] <- "month"
 
-# create the time frame by hour
+# In order to identify missing values, create a sequence of months from 2007-10 to 2018-06
 month_seq <- seq(
   from = as.Date("2007-10-01", tz = "UTC"),
   to = as.Date("2018-06-13", tz = "UTC"),
   by = "month"
 )
-df_month_seq <- data.frame(month = month_seq)
 
-# merge well data into time frame
+# Merge the sequence into our data. Months not in the data will have a missing value
+df_month_seq <- data.frame(month = month_seq)
 month_agg <- month_agg %>%
   right_join(df_month_seq, by = "month")
 
@@ -67,11 +69,11 @@ month_agg_intp <- month_agg_intp[45:nrow(month_agg_intp),]
 # use well_ft_mean as time series data because all the values are positive
 ts_wellft <- ts(month_agg_intp$Well_ft_mean, start = c(2011, 6), end = c(2018, 6), frequency = 12)
 
-# Use a holdout data set
+# Use a holdout data set of 6 months
 training <- subset(ts_wellft, end = length(ts_wellft) - 6)
 test <- subset(ts_wellft, start = length(ts_wellft) - 5)
 
-# generate prediction by using different model
+# generate prediction by using different models
 HW_M_Train <- hw(training, seasonal = "multiplicative", initial='optimal', h = 6)
 HW_A_Train <- hw(training, seasonal = "additive", initial='optimal', h = 6)
 SES_Train <- ses(training, initial = "optimal", h=6)
@@ -89,7 +91,10 @@ for(i in 1:length(ls_Model)){
 
 # look for the least MAPE
 for(i in 1:length(ls_Model)){
-  print(ls_Model[[i]]$MAPE)
+  print(
+    paste(
+      ls_Model[[i]]$method,": ",ls_Model[[i]]$MAPE
+      ))
 }
 
 # check the plots (if aggregating by month changes the seasonality)
@@ -130,10 +135,11 @@ max = max(training, na.rm = TRUE) - diff_wc + 0.5
 ggplot(df_training_stl, aes(month)) + 
   geom_line(aes(y = (training - diff_wc), colour = "Actual")) + 
   geom_line(aes(y = (trend - diff_wc), colour = "Trend")) +
+  ylab("Corrected Water Level (Ft)") +
   xlab("Date") +
-  ylab("Corrected Well ft") +
   ylim(c(min, max)) +
-  labs(title = "Actual Well Feet vs. Trend", size = 15) +
+  labs(title = "PB-1680 Water Level with Trend", size = 15,
+       subtitle="STL Decomposition of Training Data - Oct 2011 to Dec 2017") +
   theme(legend.title = element_blank())
 
 #Actual vs training seasonality adjusted
@@ -141,32 +147,36 @@ ggplot(df_training_stl, aes(month)) +
   geom_line(aes(y = training - diff_wc, colour = "Actual")) +
   geom_line(aes(y = seasonal_adjusted - diff_wc, colour = "Seasonality Adjusted")) +
   xlab("Date") +
-  ylab("Corrected Well ft") +
+  ylab("Corrected Water Level (Ft)") +
   ylim(c(min, max)) +
-  labs(title = "Actual Well Feet vs. Trend", size = 15) +
+  labs(title = "PB-1680 Monthly Water Level with Seasonality Adjustment", size = 15,
+       subtitle = "STL Decomposition of Training Data - Oct 2011 to Dec 2017") +
   theme(legend.title = element_blank())
 
-
 # convert the prediction data into dataframe so can plot
-df_prediction <- data.frame(cbind(month = month_agg_intp$month[(nrow(month_agg_intp)-5):nrow(month_agg_intp)], test = test, HW_M = ls_Model$HW_M$mean))
+df_prediction <- data.frame(cbind(month = month_agg_intp$month[(nrow(month_agg_intp)-5):nrow(month_agg_intp)],
+                                  test = test,
+                                  HW_M = ls_Model$HW_M$mean))
 df_prediction$month <- as.Date(df_prediction$month)
 
 
-
-
 ######### how to display Jan 2018, Feb 2018, ....
+library(scales)
 
 # create the plot for the prediction
-ggplot(df_prediction, aes(month)) + 
+ggplot(df_prediction, aes(as.Date(month))) + 
   geom_line(aes(y = test - diff_wc, colour = "Actual")) +
   geom_line(aes(y = HW_M - diff_wc, colour = "Prediction")) +
-  xlab("Date") +
-  ylab("Well ft") +
-  labs(title = "Well ft Actual vs. Prediction", size = 15) +
+ # scale_x_date(labels =  function(x) format(x, "%b")) +
+  xlab("Month") +
+  ylab("Corrected Water Level (Ft)") +
+  labs(title = "PB-1680 Model Evaluation on Test Data",
+       subtitle="Actual vs. Predicted Water Level: January-June 2018", size = 15) +
   ylim(c(min, max)) + 
   theme(legend.title = element_blank())
 
 ########## can we use ggplot???????  and we need to subtract diff_wc
+## Don't believe we need this plot
 
   # ESM forecast 6 month out
   autoplot(ls_Model$HW_M) +

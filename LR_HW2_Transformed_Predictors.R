@@ -147,8 +147,12 @@ test_model_df <- df_transformed
 test_model_df$LOC <- NULL
 test_model_df$MOVED <- NULL
 # Base AIC: 9027
-# Current AIC: 8973
+# Current AIC: 8954
 
-wealth_interaction <- glm(INS ~ . + DDABAL*SAVBAL + SAV*MM + SAVBAL*MM + DDABAL*ATMAMT + SAVBAL*ATMAMT,  data=test_model_df, family=binomial(link="logit"))
+test_model_df$savings_propensity <- test_model_df$DDABAL / (test_model_df$SAVBAL + 1)
+test_model_df$cash_a_lot <- test_model_df$ATMAMT / (test_model_df$DDABAL + 1)
+
+
+wealth_interaction <- glm(INS ~ . + SAV*MM + SAVBAL*MM  + SAVBAL*ATMAMT,  data=test_model_df, family=binomial(link="logit"))
 summary(wealth_interaction)
 

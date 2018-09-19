@@ -174,6 +174,7 @@ ggplot(df_prediction, aes(month)) +
 
 #we assumed a multiplicative model, so log transform the series to ensure stable variance
 seas_adj_ts <- log(month_agg_intp$Well_ft_mean)
+
 #make the new time series object of the new ~cool~ log transform series
 seas_adj_ts <- ts(seas_adj_ts,start = c(2011, 6), end = c(2018, 6), frequency = 12)
 #N diffs to see if seasonality is apparent, if 0 need to fit dummy varibales, if 1 need to take differences
@@ -190,9 +191,17 @@ month_seq <- as.factor(lubridate::month(seq(
 
 #Fit dummy variables to the time series so we can get *hopefully a stationary set of residuals
 
-fit.seas <- fit.seas <- tslm(seas_adj_ts ~ month_seq)
+fit.seas <- tslm(seas_adj_ts ~ month_seq)
 #test the residuals for a lags 0,1,2 back to see if we are stationary
 adf.test(fit.seas$residuals, alternative = "stationary", k = 0)
 adf.test(fit.seas$residuals, alternative = "stationary", k = 1)
 adf.test(fit.seas$residuals, alternative = "stationary", k = 2)
 #We are stationary!!!!
+
+plot_months <- seq(
+  from = as.Date("2011-6-01", tz = "UTC"),
+  to = as.Date("2018-06-13", tz = "UTC"),
+  by = "month"
+)
+ggplot() + geom_line(aes(x= plot_months, y=fit.seas$residuals))+ labs(x = "Date", y="Residuals",
+                                                                      title="Stationary Time Series for Well PB1680")
